@@ -4,3 +4,4 @@ langchain-google-genai
 langchain-text-splitters
 chromadb
 requests
+beautifulsoup4
