@@ -1,0 +1,9 @@
+﻿streamlit
+langchain
+langchain-google-genai
+langchain-community
+langchain-core
+langchain-text-splitters
+chromadb
+beautifulsoup4
+requests
