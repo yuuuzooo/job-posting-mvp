@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains import create_stuff_documents_chain
+from langchain.chains import create_stuff_documents_chain # <- 8行目：これが正しいインポートです
 from langchain.chains import create_retrieval_chain
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -20,9 +20,8 @@ def setup_rag():
     """
     try:
         # --- ノウハウファイルの読み込み ---
-
-        # GitHubリポジトリのURL（"yuuzoozo/job-posting-mvp"の部分）
-        # 【！】ご自身のGitHubユーザー名/リポジトリ名に合わせてください
+        
+        # 【！】あなたのGitHubユーザー名/リポジトリ名に修正済み
         repo_owner = "yuuzoozo" # あなたのGitHubユーザー名
         repo_name = "job-posting-mvp" # あなたのリポジトリ名
 
@@ -33,17 +32,17 @@ def setup_rag():
         files = response.json()
 
         all_documents = []
-
+        
         # .txtファイルだけを対象にループ処理
         for file in files:
             if file['name'].endswith('.txt'):
                 # ファイルの「生データ」のURLを取得
                 download_url = file['download_url']
-
+                
                 # テキストデータをダウンロード
                 doc_response = requests.get(download_url)
                 doc_response.encoding = 'utf-8' # 文字コードをUTF-8に指定
-
+                
                 # 読み込んだテキストデータをリストに追加
                 # LangChainが扱いやすいように、 Document オブジェクトとして格納
                 from langchain_core.documents import Document
@@ -55,7 +54,7 @@ def setup_rag():
             return None
 
         # --- 読み込んだノウハウを分割・ベクトル化 ---
-
+        
         # 1. テキスト分割
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         splits = text_splitter.split_documents(all_documents)
@@ -92,33 +91,33 @@ def setup_chain(retriever):
         prompt_template = """
         あなたは、日本の採用市場を熟知したプロの採用コンサルタントです。
         以下の「社内ノウハウ」と「求人要件」に基づき、魅力的で具体的な求人票を作成してください。
-
+        
         ## 社内ノウハウ:
         {context}
-
+        
         ## 求人要件:
         {input}
-
+        
         ## アウトプット形式（要件定義書に基づく）:
         必ず以下の形式で、不足している項目も補完しながら作成してください。
-
+        
         ---
-
+        
         ### 募集背景
         （ここに募集背景を具体的に記述）
-
+        
         ### 仕事内容
         （ここに仕事内容を具体的に記述）
-
+        
         ### 応募資格（必須）
         * （ここに必須の応募資格を記述）
-
+        
         ### 応募資格（歓迎）
         * （ここに歓迎の応募資格を記述）
-
+        
         ### この仕事の魅力
         （ここにこの仕事の魅力を具体的に記述）
-
+        
         ---
         """
 
@@ -127,12 +126,12 @@ def setup_chain(retriever):
         # 1. RAG検索 + プロンプト + LLM をつなぎこむ (Stuff Document Chain)
         #    = 検索結果(context)と要件(input)をプロンプトに埋め込み、LLMに渡す
         question_answer_chain = create_stuff_documents_chain(llm, prompt)
-
+        
         # 2. 処理フロー全体を定義する (Retrieval Chain)
         #    = ユーザーの入力(input)をまずRAG検索(retriever)にかけ、
         #      その結果(context)と元の入力(input)を(1)のChainに渡す
         rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-
+        
         return rag_chain
 
     except Exception as e:
@@ -159,12 +158,12 @@ else:
             # --- 入力フォーム ---
             with st.form("job_form"):
                 st.header("求人要件の入力")
-
+                
                 job_title = st.text_input("募集職種", placeholder="例：Webマーケティング（リーダー候補）")
                 target_audience = st.text_area("ターゲット層", placeholder="例：30代前半、事業会社でのWebマーケ経験3年以上、将来的にマネジメント志向のある方")
                 required_skills = st.text_area("必須スキル（箇条書き）", placeholder="・Web広告（Google/Yahoo）の運用経験\n・SEOの基礎知識")
                 welcome_skills = st.text_area("歓迎スキル（箇条書き）", placeholder="・BtoBマーケティングの経験\n・MAツールの運用経験")
-
+                
                 # フォームの送信ボタン
                 submitted = st.form_submit_button("求人票を自動生成する")
 
@@ -182,11 +181,11 @@ else:
                             必須スキル: {required_skills}
                             歓迎スキル: {welcome_skills}
                             """
-
+                            
                             # RAGチェーンを実行（AIが回答を生成）
                             # 'input' というキーで辞書として渡す
                             response = rag_chain.invoke({"input": user_input})
-
+                            
                             # AIの回答（求人票）を表示
                             st.header("生成された求人票")
                             st.markdown(response["answer"]) # 'answer' キーに結果が入っている
